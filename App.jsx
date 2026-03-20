@@ -217,9 +217,23 @@ function PulseDots() {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
+// Sanitize input: replace curly quotes, em/en dashes, and other non-ASCII
+// punctuation with plain ASCII equivalents before sending to the API.
+function sanitizeText(text) {
+  return text
+    .replace(/[\u2018\u2019]/g, "'")   // curly single quotes → '
+    .replace(/[\u201C\u201D]/g, '"')   // curly double quotes → "
+    .replace(/\u2014/g, '--')          // em dash → --
+    .replace(/\u2013/g, '-')           // en dash → -
+    .replace(/\u2026/g, '...')         // ellipsis → ...
+    .replace(/\u00A0/g, ' ')           // non-breaking space → space
+    .replace(/[^\x00-\x7F]/g, (c) => {
+      // Keep common extended Latin characters, drop truly exotic ones
+      return c.normalize('NFD').replace(/[\u0300-\u036f]/g, '') || '';
+    });
+}
+
 function App() {
-  const [apiKey, setApiKey]             = useState('');
-  const [showKey, setShowKey]           = useState(false);
   const [description, setDescription]  = useState('');
   const [isLoading, setIsLoading]       = useState(false);
   const [streamText, setStreamText]     = useState('');
@@ -251,12 +265,8 @@ function App() {
 
   // ── Generate memo ─────────────────────────────────────────────────────────
   const generate = useCallback(async () => {
-    if (!apiKey.trim()) {
-      setError('Please enter your Anthropic API key.');
-      return;
-    }
-    if (description.trim().length < 60) {
-      setError('Please provide a more detailed company description (at least 60 characters).');
+    if (description.trim().length < 20) {
+      setError('Please provide a brief company description (at least 20 characters).');
       return;
     }
 
@@ -266,20 +276,16 @@ function App() {
     setStreamText('');
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const cleanDescription = sanitizeText(description.trim());
+      const res = await fetch('/api/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey.trim(),
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: MODEL,
           max_tokens: 2500,
           stream: true,
           system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: buildUserPrompt(description.trim()) }],
+          messages: [{ role: 'user', content: buildUserPrompt(cleanDescription) }],
         }),
       });
 
@@ -289,9 +295,8 @@ function App() {
           const data = await res.json();
           msg = data.error?.message || msg;
         } catch {}
-        if (res.status === 401) msg = 'Invalid API key. Please verify it at console.anthropic.com.';
+        if (res.status === 401 || res.status === 500) msg = 'Configuration error — please contact support.';
         else if (res.status === 429) msg = 'Rate limit reached. Wait a moment then try again.';
-        else if (res.status === 400) msg = 'Bad request — the description may contain unsupported characters.';
         throw new Error(msg);
       }
 
@@ -342,7 +347,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [apiKey, description]);
+  }, [description]);
 
   // ── Copy / Export ──────────────────────────────────────────────────────────
   const copyMemo = useCallback(() => {
@@ -416,32 +421,6 @@ function App() {
         {!rawMemo && (
           <div className="no-print bg-[#0d0f16] border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl shadow-black/40">
 
-            {/* API key */}
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-slate-400">
-                <span className="text-amber-400">◈</span> Anthropic API Key
-              </label>
-              <div className="relative">
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={e => { setApiKey(e.target.value); setError(''); }}
-                  placeholder="sk-ant-api03-…"
-                  className="w-full bg-[#141720] border border-slate-700 rounded-lg px-4 py-3 text-slate-200 text-sm font-mono placeholder-slate-700 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/20 transition-all pr-20"
-                />
-                <button
-                  onClick={() => setShowKey(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-mono text-slate-500 hover:text-slate-300 transition-colors tracking-widest"
-                >
-                  {showKey ? 'HIDE' : 'SHOW'}
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-700 font-mono">
-                Your key is never stored — used only for this request.
-                Get yours at <span className="text-slate-600">console.anthropic.com</span>
-              </p>
-            </div>
-
             {/* Description textarea */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -469,7 +448,7 @@ function App() {
               <div className="flex justify-between items-center">
                 <p className="text-[11px] text-slate-700 font-mono">
                   {charCount.toLocaleString()} characters
-                  {charCount > 0 && charCount < 60 &&
+                  {charCount > 0 && charCount < 20 &&
                     <span className="text-amber-700 ml-2">— add more detail for a better memo</span>
                   }
                 </p>
