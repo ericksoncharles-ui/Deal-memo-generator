@@ -131,7 +131,7 @@ function FormattedContent({ text }) {
       const body = trimmed.replace(/^\d+\.\s*/, '');
       nodes.push(
         <div key={i} className="flex gap-3 items-start">
-          <span className="font-mono text-slate-600 text-xs shrink-0 mt-0.5 w-5 text-right select-none">{num}</span>
+          <span className="font-mono text-slate-500 text-xs shrink-0 mt-0.5 w-5 text-right select-none">{num}</span>
           <span className="text-slate-300 text-sm leading-relaxed">{renderInline(body)}</span>
         </div>
       );
@@ -139,7 +139,7 @@ function FormattedContent({ text }) {
       const body = trimmed.replace(/^[-•*]\s*/, '');
       nodes.push(
         <div key={i} className="flex gap-3 items-start">
-          <span className="text-slate-700 shrink-0 mt-1 text-xs select-none">—</span>
+          <span className="text-slate-500 shrink-0 mt-1 text-xs select-none">—</span>
           <span className="text-slate-300 text-sm leading-relaxed">{renderInline(body)}</span>
         </div>
       );
@@ -483,7 +483,7 @@ function App() {
             Deal Memos,{' '}
             <span className="text-amber-400">Instantly</span>
           </h1>
-          <p className="text-slate-500 max-w-xl text-base leading-relaxed">
+          <p className="text-slate-400 max-w-xl text-base leading-relaxed">
             Paste a company description. Get a rigorous M&A deal memo — business model,
             TAM, risks, comps, diligence questions, and a preliminary investment verdict —
             written the way a senior banker would write it.
@@ -496,7 +496,7 @@ function App() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-500 font-mono">
+                <label className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
                   Company Description
                 </label>
                 <button
@@ -518,7 +518,7 @@ function App() {
                 className="w-full bg-[#070c18] border border-[#1e2c3f] rounded-xl px-4 py-3.5 text-slate-200 text-sm placeholder-[#1e2d47] focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/10 transition-all resize-none leading-relaxed"
               />
               <div className="flex justify-between items-center">
-                <p className="text-[11px] text-slate-700 font-mono">
+                <p className="text-[11px] text-slate-500 font-mono">
                   {charCount.toLocaleString()} chars
                   {charCount > 0 && charCount < 20 &&
                     <span className="text-amber-700/60 ml-2">— add more detail for a better memo</span>
@@ -534,7 +534,7 @@ function App() {
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-[#1a2438]" />
-                <span className="text-[10px] font-mono text-slate-700 tracking-widest">OR UPLOAD A FILE</span>
+                <span className="text-[10px] font-mono text-slate-500 tracking-widest">OR UPLOAD A FILE</span>
                 <div className="h-px flex-1 bg-[#1a2438]" />
               </div>
 
@@ -570,11 +570,11 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <span className="text-slate-600 text-base leading-none">↑</span>
-                    <span className="text-slate-600 text-xs font-mono">
-                      Drop a file or <span className="text-slate-400">click to browse</span>
+                    <span className="text-slate-400 text-base leading-none">↑</span>
+                    <span className="text-slate-400 text-xs font-mono">
+                      Drop a file or <span className="text-slate-300">click to browse</span>
                     </span>
-                    <span className="ml-auto text-[10px] text-slate-700 font-mono tracking-wide shrink-0">PDF · DOCX · TXT</span>
+                    <span className="ml-auto text-[10px] text-slate-400 font-mono tracking-wide shrink-0">PDF · DOCX · TXT</span>
                   </>
                 )}
               </div>
@@ -619,7 +619,7 @@ function App() {
               <span className="text-amber-400/60 font-mono text-[10px] tracking-[0.2em]">GENERATING — DO NOT CLOSE</span>
             </div>
             <div className="p-5 max-h-64 overflow-y-auto">
-              <pre className="text-[#2d3d5a] text-xs font-mono leading-relaxed whitespace-pre-wrap cursor-blink">
+              <pre className="text-[#5a7299] text-xs font-mono leading-relaxed whitespace-pre-wrap cursor-blink">
                 {streamText}
               </pre>
               <div ref={streamEndRef} />
@@ -631,7 +631,7 @@ function App() {
         {isLoading && !streamText && (
           <div className="no-print flex flex-col items-center justify-center py-20 gap-4">
             <PulseDots />
-            <p className="text-slate-700 font-mono text-[11px] tracking-[0.2em]">
+            <p className="text-slate-500 font-mono text-[11px] tracking-[0.2em]">
               CONTACTING ANTHROPIC API…
             </p>
           </div>
@@ -647,7 +647,7 @@ function App() {
                 <h2 className="font-mono text-[11px] font-bold tracking-[0.15em] uppercase text-slate-500">
                   Investment Deal Memo
                 </h2>
-                <p className="text-[11px] text-slate-700 font-mono mt-0.5">
+                <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                   {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
@@ -722,7 +722,7 @@ function App() {
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       <footer className="no-print border-t border-[#1a2438] mt-6 py-5">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-800">
+        <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-600">
           <span>CREATED BY CHARLES ERICKSON</span>
           <span>FOR INFORMATIONAL PURPOSES ONLY — NOT INVESTMENT ADVICE</span>
         </div>
