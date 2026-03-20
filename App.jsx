@@ -1237,7 +1237,7 @@ function App() {
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       <footer className="no-print border-t border-[#1a2438] mt-6 py-5">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-600">
-          <span>CREATED BY CHARLES ERICKSON</span>
+          <span>CREATED BY CHARLES ERICKSON · SOUNDMIND AI</span>
           <span>FOR INFORMATIONAL PURPOSES ONLY — NOT INVESTMENT ADVICE</span>
         </div>
       </footer>
