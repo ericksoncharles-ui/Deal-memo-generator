@@ -810,7 +810,7 @@ function App() {
             <span className="text-amber-400">Instantly</span>
           </h1>
           <p className="text-slate-400 max-w-xl text-base leading-relaxed">
-            Drop any company description — CIM, teaser, website, whatever you have. Get back a structured deal memo: business model breakdown, TAM with sizing logic, revenue quality and retention flags, risk factors ranked by materiality, public comps and precedent transactions, and sharp diligence questions ready for IC. Written at the level your MD expects, not what an associate drafts at 2am.
+            Drop any company description — CIM, teaser, website, whatever you have. Get back a structured deal memo: business model breakdown, TAM with sizing logic, revenue quality and retention flags, risk factors ranked by materiality, public comps and precedent transactions, and sharp diligence questions ready for IC.
           </p>
         </div>
 
