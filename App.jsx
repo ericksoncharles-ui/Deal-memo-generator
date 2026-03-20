@@ -378,17 +378,27 @@ function App() {
       <header className="no-print sticky top-0 z-50 border-b border-[#181a23] bg-[#07080c]/95 backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            {/* Logo mark */}
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="28" height="28" rx="6" fill="#111318" stroke="#1e2028" strokeWidth="1"/>
+              {/* Document base */}
+              <rect x="7" y="6" width="11" height="14" rx="1.5" fill="none" stroke="#f59e0b" strokeWidth="1.2"/>
+              {/* Folded corner */}
+              <path d="M15 6 L18 9 L15 9 Z" fill="#f59e0b" opacity="0.5"/>
+              <line x1="15" y1="6" x2="15" y2="9" stroke="#f59e0b" strokeWidth="1.2"/>
+              <line x1="15" y1="9" x2="18" y2="9" stroke="#f59e0b" strokeWidth="1.2"/>
+              {/* Text lines on doc */}
+              <line x1="9.5" y1="12" x2="15.5" y2="12" stroke="#f59e0b" strokeWidth="1" opacity="0.5"/>
+              <line x1="9.5" y1="14.5" x2="14" y2="14.5" stroke="#f59e0b" strokeWidth="1" opacity="0.5"/>
+              {/* Mini bar chart */}
+              <rect x="16" y="17" width="2" height="4" rx="0.5" fill="#f59e0b" opacity="0.9"/>
+              <rect x="19" y="15" width="2" height="6" rx="0.5" fill="#f59e0b" opacity="0.6"/>
+            </svg>
             <span className="font-mono text-[11px] font-bold text-amber-400 tracking-[0.2em]">DEAL MEMO</span>
             <span className="h-4 w-px bg-[#252830] hidden sm:block" />
             <span className="hidden sm:block text-[11px] text-slate-600 font-mono tracking-[0.15em]">GENERATOR</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-slate-700 font-mono hidden sm:block tracking-wide">POWERED BY</span>
-            <span className="font-mono text-[10px] px-2.5 py-1 rounded-md bg-[#111318] border border-[#1e2028] text-slate-500">
-              {MODEL}
-            </span>
-          </div>
+          <div />
         </div>
       </header>
 
@@ -588,7 +598,7 @@ function App() {
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       <footer className="no-print border-t border-[#181a23] mt-6 py-5">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-800">
-          <span>DEAL MEMO GENERATOR — POWERED BY ANTHROPIC</span>
+          <span>CREATED BY CHARLES ERICKSON</span>
           <span>FOR INFORMATIONAL PURPOSES ONLY — NOT INVESTMENT ADVICE</span>
         </div>
       </footer>
