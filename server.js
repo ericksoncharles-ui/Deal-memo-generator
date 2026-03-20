@@ -1,10 +1,22 @@
-const express = require('express');
-const path    = require('path');
+const express   = require('express');
+const path      = require('path');
 const { Readable } = require('stream');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
+app.set('trust proxy', 1); // trust Railway's proxy for accurate IPs
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname)));
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max: 10,               // 10 requests per IP per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: 'Too many requests — please wait a moment and try again.' } },
+});
+app.use('/api/', limiter);
 
 app.post('/api/messages', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
