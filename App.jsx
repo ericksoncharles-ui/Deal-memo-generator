@@ -240,9 +240,14 @@ function App() {
   const [error, setError]               = useState('');
   const [copied, setCopied]             = useState(false);
   const [charCount, setCharCount]       = useState(0);
+  const [fileLoading, setFileLoading]   = useState(false);
+  const [fileError, setFileError]       = useState('');
+  const [isDragging, setIsDragging]     = useState(false);
+  const [fileName, setFileName]         = useState('');
 
   const memoTopRef   = useRef(null);
   const streamEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (streamEndRef.current) {
@@ -251,6 +256,69 @@ function App() {
   }, [streamText]);
 
   const sections = useMemo(() => (rawMemo ? parseSections(rawMemo) : []), [rawMemo]);
+
+  const handleFile = useCallback(async (file) => {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['pdf', 'docx', 'doc', 'txt'].includes(ext)) {
+      setFileError('Unsupported file type. Please upload a PDF, DOCX, or TXT file.');
+      return;
+    }
+    setFileLoading(true);
+    setFileError('');
+    setFileName(file.name);
+    try {
+      let text = '';
+      if (ext === 'txt') {
+        text = await file.text();
+      } else if (ext === 'pdf') {
+        if (typeof pdfjsLib === 'undefined') throw new Error('PDF library not loaded yet — please try again.');
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pages = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pages.push(content.items.map(item => item.str).join(' '));
+        }
+        text = pages.join('\n\n');
+      } else if (ext === 'docx' || ext === 'doc') {
+        if (typeof mammoth === 'undefined') throw new Error('DOCX library not loaded yet — please try again.');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result.value;
+      }
+      text = text.trim();
+      if (!text) throw new Error('No readable text found in this file.');
+      setDescription(text);
+      setCharCount(text.length);
+      setError('');
+    } catch (err) {
+      setFileError(err.message || 'Failed to read file.');
+      setFileName('');
+    } finally {
+      setFileLoading(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }, [handleFile]);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
 
   const handleExample = useCallback(() => {
     setDescription(EXAMPLE_DESCRIPTION);
@@ -460,6 +528,63 @@ function App() {
                   <p className="text-[11px] text-amber-700/60 font-mono">Consider trimming — 500 words is ideal</p>
                 )}
               </div>
+            </div>
+
+            {/* ── File upload ──────────────────────────────────────────────── */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-[#181a23]" />
+                <span className="text-[10px] font-mono text-slate-700 tracking-widest">OR UPLOAD A FILE</span>
+                <div className="h-px flex-1 bg-[#181a23]" />
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.doc,.txt"
+                className="hidden"
+                onChange={e => { handleFile(e.target.files[0]); e.target.value = ''; }}
+              />
+
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onClick={() => !fileLoading && fileInputRef.current?.click()}
+                className={`cursor-pointer border border-dashed rounded-xl px-4 py-3.5 flex items-center gap-3 transition-all ${
+                  isDragging
+                    ? 'border-amber-500/40 bg-amber-500/[0.04]'
+                    : 'border-[#252830] hover:border-[#353a4a] hover:bg-[#0f1018]'
+                } ${fileLoading ? 'cursor-default' : ''}`}
+              >
+                {fileLoading ? (
+                  <>
+                    <PulseDots />
+                    <span className="text-slate-500 text-xs font-mono">Extracting text from {fileName}…</span>
+                  </>
+                ) : fileName && !fileError ? (
+                  <>
+                    <span className="text-emerald-500 text-sm">✓</span>
+                    <span className="text-slate-400 text-xs font-mono truncate">{fileName}</span>
+                    <span className="ml-auto text-[10px] text-slate-600 font-mono shrink-0">click to replace</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-slate-600 text-base leading-none">↑</span>
+                    <span className="text-slate-600 text-xs font-mono">
+                      Drop a file or <span className="text-slate-400">click to browse</span>
+                    </span>
+                    <span className="ml-auto text-[10px] text-slate-700 font-mono tracking-wide shrink-0">PDF · DOCX · TXT</span>
+                  </>
+                )}
+              </div>
+
+              {fileError && (
+                <div className="flex items-start gap-2 px-3 py-2 bg-rose-950/20 border border-rose-900/25 rounded-lg">
+                  <span className="text-rose-400 text-xs shrink-0">⚠</span>
+                  <p className="text-rose-300/80 text-xs">{fileError}</p>
+                </div>
+              )}
             </div>
 
             {error && (
