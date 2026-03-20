@@ -31,24 +31,47 @@
     }
   </script>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter (weights 300–800) + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
 
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; background: #080a0d; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #111827; }
-    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+    body {
+      margin: 0;
+      background: #07080c;
+    }
+
+    /* Subtle ambient glow at the top of the page */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.035) 0%, transparent 68%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #root { position: relative; z-index: 1; }
+
+    /* Refined scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0c0d12; }
+    ::-webkit-scrollbar-thumb { background: #252830; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #353a4a; }
 
     @media print {
       .no-print { display: none !important; }
       body { background: white; color: black; }
+      body::before { display: none; }
       .print-section { break-inside: avoid; }
     }
 

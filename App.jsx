@@ -37,7 +37,6 @@ ${description}`;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseSections(rawText) {
-  // Splits on ## headers; normalises numbering ("## 1. Foo" → "FOO")
   const results = [];
   const re = /##\s+(?:\d+\.\s+)?([^\n]+)\n([\s\S]*?)(?=\n##\s+|$)/g;
   let m;
@@ -53,18 +52,18 @@ function parseSections(rawText) {
 
 function getSectionMeta(key) {
   if (/COMPANY|OVERVIEW|BUSINESS/.test(key))
-    return { icon: '◈', accent: 'text-sky-400', border: 'border-sky-500/30', bg: 'bg-sky-500/5' };
+    return { accent: 'text-sky-400', leftBorder: 'border-l-sky-500' };
   if (/MARKET|TAM|OPPORTUNITY/.test(key))
-    return { icon: '◉', accent: 'text-violet-400', border: 'border-violet-500/30', bg: 'bg-violet-500/5' };
+    return { accent: 'text-violet-400', leftBorder: 'border-l-violet-500' };
   if (/RISK/.test(key))
-    return { icon: '▲', accent: 'text-rose-400', border: 'border-rose-500/30', bg: 'bg-rose-500/5' };
+    return { accent: 'text-rose-400', leftBorder: 'border-l-rose-500' };
   if (/COMPARABLE|COMP/.test(key))
-    return { icon: '≡', accent: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/5' };
+    return { accent: 'text-amber-400', leftBorder: 'border-l-amber-500' };
   if (/DILIGENCE|QUESTION/.test(key))
-    return { icon: '?', accent: 'text-teal-400', border: 'border-teal-500/30', bg: 'bg-teal-500/5' };
+    return { accent: 'text-teal-400', leftBorder: 'border-l-teal-500' };
   if (/VERDICT|RECOMMENDATION|PRELIMINARY/.test(key))
-    return { icon: '★', accent: 'text-slate-300', border: 'border-slate-500/30', bg: 'bg-slate-500/5', isVerdict: true };
-  return { icon: '◆', accent: 'text-slate-400', border: 'border-slate-600/30', bg: 'bg-slate-600/5' };
+    return { accent: 'text-slate-300', leftBorder: 'border-l-slate-400', isVerdict: true };
+  return { accent: 'text-slate-400', leftBorder: 'border-l-slate-600' };
 }
 
 function getVerdictType(content) {
@@ -72,7 +71,6 @@ function getVerdictType(content) {
   if (/RECOMMENDATION:\s*PURSUE/.test(u)) return 'PURSUE';
   if (/RECOMMENDATION:\s*PASS/.test(u)) return 'PASS';
   if (/RECOMMENDATION:\s*WATCH/.test(u)) return 'WATCH';
-  // Fallback: scan for standalone word
   if (u.includes('PURSUE')) return 'PURSUE';
   if (u.includes('PASS')) return 'PASS';
   return 'WATCH';
@@ -80,18 +78,27 @@ function getVerdictType(content) {
 
 const VERDICT_STYLES = {
   PURSUE: {
-    badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40',
-    card: 'border-emerald-500/30 bg-emerald-500/5',
+    badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    outerBorder: 'border-emerald-500/20',
+    leftBorder: 'border-l-emerald-500',
+    headerBg: 'bg-emerald-500/[0.04]',
+    headerBorder: 'border-emerald-500/15',
     label: 'PURSUE',
   },
   WATCH: {
-    badge: 'bg-amber-500/15 text-amber-400 border-amber-500/40',
-    card: 'border-amber-500/30 bg-amber-500/5',
+    badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    outerBorder: 'border-amber-500/20',
+    leftBorder: 'border-l-amber-500',
+    headerBg: 'bg-amber-500/[0.04]',
+    headerBorder: 'border-amber-500/15',
     label: 'WATCH',
   },
   PASS: {
-    badge: 'bg-rose-500/15 text-rose-400 border-rose-500/40',
-    card: 'border-rose-500/30 bg-rose-500/5',
+    badge: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+    outerBorder: 'border-rose-500/20',
+    leftBorder: 'border-l-rose-500',
+    headerBg: 'bg-rose-500/[0.04]',
+    headerBorder: 'border-rose-500/15',
     label: 'PASS',
   },
 };
@@ -99,11 +106,10 @@ const VERDICT_STYLES = {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function renderInline(text) {
-  // Handle **bold**
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((p, i) =>
     p.startsWith('**') && p.endsWith('**')
-      ? <strong key={i} className="text-slate-200 font-semibold">{p.slice(2, -2)}</strong>
+      ? <strong key={i} className="text-white font-semibold">{p.slice(2, -2)}</strong>
       : p
   );
 }
@@ -121,32 +127,29 @@ function FormattedContent({ text }) {
     if (!trimmed) {
       nodes.push(<div key={i} className="h-2" />);
     } else if (/^\d+\./.test(trimmed)) {
-      // Numbered item
       const num = trimmed.match(/^(\d+\.)/)[1];
       const body = trimmed.replace(/^\d+\.\s*/, '');
       nodes.push(
         <div key={i} className="flex gap-3 items-start">
-          <span className="font-mono text-slate-500 text-xs shrink-0 mt-0.5 w-5 text-right">{num}</span>
+          <span className="font-mono text-slate-600 text-xs shrink-0 mt-0.5 w-5 text-right select-none">{num}</span>
           <span className="text-slate-300 text-sm leading-relaxed">{renderInline(body)}</span>
         </div>
       );
     } else if (/^[-•*]/.test(trimmed)) {
-      // Bullet item
       const body = trimmed.replace(/^[-•*]\s*/, '');
       nodes.push(
         <div key={i} className="flex gap-3 items-start">
-          <span className="text-slate-600 shrink-0 mt-1 text-xs">›</span>
+          <span className="text-slate-700 shrink-0 mt-1 text-xs select-none">—</span>
           <span className="text-slate-300 text-sm leading-relaxed">{renderInline(body)}</span>
         </div>
       );
     } else if (/^[A-Z][^a-z]{1,40}:/.test(trimmed)) {
-      // Subsection label like "Regulatory Risk:"
       const colon = trimmed.indexOf(':');
       const label = trimmed.slice(0, colon + 1);
       const rest = trimmed.slice(colon + 1).trim();
       nodes.push(
-        <div key={i} className="text-sm leading-relaxed mt-1">
-          <span className="text-slate-200 font-semibold">{label}</span>
+        <div key={i} className="text-sm leading-relaxed mt-2">
+          <span className="text-white font-semibold">{label}</span>
           {rest && <span className="text-slate-300"> {renderInline(rest)}</span>}
         </div>
       );
@@ -154,7 +157,7 @@ function FormattedContent({ text }) {
       // Skip — rendered separately in VerdictCard
     } else {
       nodes.push(
-        <p key={i} className="text-slate-300 text-sm leading-relaxed">
+        <p key={i} className="text-slate-300 text-sm leading-[1.75]">
           {renderInline(trimmed)}
         </p>
       );
@@ -162,17 +165,18 @@ function FormattedContent({ text }) {
     i++;
   }
 
-  return <div className="space-y-2">{nodes}</div>;
+  return <div className="space-y-2.5">{nodes}</div>;
 }
 
 function SectionCard({ header, content, meta }) {
   return (
-    <div className={`print-section rounded-xl border ${meta.border} ${meta.bg} p-5 space-y-3`}>
-      <div className="flex items-center gap-2 pb-2 border-b border-slate-800/60">
-        <span className={`font-mono text-base ${meta.accent}`}>{meta.icon}</span>
-        <h3 className={`text-[11px] font-bold tracking-widest uppercase ${meta.accent}`}>{header}</h3>
+    <div className={`print-section rounded-xl overflow-hidden bg-[#0c0d12] border border-[#181a23] border-l-[3px] ${meta.leftBorder}`}>
+      <div className="px-5 py-3.5 border-b border-[#181a23]">
+        <h3 className={`text-[11px] font-bold tracking-[0.15em] uppercase ${meta.accent} font-mono`}>{header}</h3>
       </div>
-      <FormattedContent text={content} />
+      <div className="px-5 py-4">
+        <FormattedContent text={content} />
+      </div>
     </div>
   );
 }
@@ -180,23 +184,21 @@ function SectionCard({ header, content, meta }) {
 function VerdictCard({ content }) {
   const type = getVerdictType(content);
   const style = VERDICT_STYLES[type];
-  // Strip the "RECOMMENDATION: TYPE" line from the body
   const body = content.replace(/^RECOMMENDATION:\s*(PASS|WATCH|PURSUE)\s*\n?/i, '').trim();
 
   return (
-    <div className={`print-section rounded-xl border ${style.card} p-5 space-y-3`}>
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-base text-slate-300">★</span>
-          <h3 className="text-[11px] font-bold tracking-widest uppercase text-slate-400">
-            PRELIMINARY VERDICT
-          </h3>
-        </div>
-        <span className={`px-4 py-1 rounded-full text-[11px] font-bold tracking-widest border ${style.badge}`}>
+    <div className={`print-section rounded-xl overflow-hidden border ${style.outerBorder} border-l-[3px] ${style.leftBorder}`}>
+      <div className={`flex items-center justify-between px-5 py-3.5 border-b ${style.headerBorder} ${style.headerBg}`}>
+        <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
+          Preliminary Verdict
+        </h3>
+        <span className={`px-4 py-1 rounded text-[11px] font-bold tracking-[0.12em] border ${style.badge}`}>
           {style.label}
         </span>
       </div>
-      <FormattedContent text={body} />
+      <div className="px-5 py-4 bg-[#0c0d12]">
+        <FormattedContent text={body} />
+      </div>
     </div>
   );
 }
@@ -217,18 +219,15 @@ function PulseDots() {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
-// Sanitize input: replace curly quotes, em/en dashes, and other non-ASCII
-// punctuation with plain ASCII equivalents before sending to the API.
 function sanitizeText(text) {
   return text
-    .replace(/[\u2018\u2019]/g, "'")   // curly single quotes → '
-    .replace(/[\u201C\u201D]/g, '"')   // curly double quotes → "
-    .replace(/\u2014/g, '--')          // em dash → --
-    .replace(/\u2013/g, '-')           // en dash → -
-    .replace(/\u2026/g, '...')         // ellipsis → ...
-    .replace(/\u00A0/g, ' ')           // non-breaking space → space
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2014/g, '--')
+    .replace(/\u2013/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00A0/g, ' ')
     .replace(/[^\x00-\x7F]/g, (c) => {
-      // Keep common extended Latin characters, drop truly exotic ones
       return c.normalize('NFD').replace(/[\u0300-\u036f]/g, '') || '';
     });
 }
@@ -242,10 +241,9 @@ function App() {
   const [copied, setCopied]             = useState(false);
   const [charCount, setCharCount]       = useState(0);
 
-  const memoTopRef    = useRef(null);
-  const streamEndRef  = useRef(null);
+  const memoTopRef   = useRef(null);
+  const streamEndRef = useRef(null);
 
-  // Auto-scroll streaming panel
   useEffect(() => {
     if (streamEndRef.current) {
       streamEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -254,7 +252,6 @@ function App() {
 
   const sections = useMemo(() => (rawMemo ? parseSections(rawMemo) : []), [rawMemo]);
 
-  // ── Load example ──────────────────────────────────────────────────────────
   const handleExample = useCallback(() => {
     setDescription(EXAMPLE_DESCRIPTION);
     setCharCount(EXAMPLE_DESCRIPTION.length);
@@ -263,7 +260,6 @@ function App() {
     setStreamText('');
   }, []);
 
-  // ── Generate memo ─────────────────────────────────────────────────────────
   const generate = useCallback(async () => {
     if (description.trim().length < 20) {
       setError('Please provide a brief company description (at least 20 characters).');
@@ -334,8 +330,6 @@ function App() {
 
       setRawMemo(full);
       setStreamText('');
-
-      // Scroll to memo
       setTimeout(() => memoTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     } catch (err) {
       let msg = err.message || 'An unexpected error occurred.';
@@ -348,7 +342,6 @@ function App() {
     }
   }, [description]);
 
-  // ── Copy / Export ──────────────────────────────────────────────────────────
   const copyMemo = useCallback(() => {
     if (!rawMemo) return;
     navigator.clipboard.writeText(rawMemo).then(() => {
@@ -379,37 +372,40 @@ function App() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#080a0d] text-slate-100 font-sans">
+    <div className="min-h-screen bg-[#07080c] text-slate-100 font-sans">
 
-      {/* ── Top nav bar ─────────────────────────────────────────────────────── */}
-      <header className="no-print sticky top-0 z-50 border-b border-slate-800/80 bg-[#0a0c10]/95 backdrop-blur">
-        <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">
+      {/* ── Nav ─────────────────────────────────────────────────────────────── */}
+      <header className="no-print sticky top-0 z-50 border-b border-[#181a23] bg-[#07080c]/95 backdrop-blur">
+        <div className="max-w-4xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span className="font-mono text-xs font-bold text-amber-400 tracking-widest">DEAL MEMO</span>
-            <span className="hidden sm:block h-4 w-px bg-slate-700" />
-            <span className="hidden sm:block text-xs text-slate-500 font-mono tracking-wide">
-              GENERATOR
-            </span>
+            <span className="font-mono text-[11px] font-bold text-amber-400 tracking-[0.2em]">DEAL MEMO</span>
+            <span className="h-4 w-px bg-[#252830] hidden sm:block" />
+            <span className="hidden sm:block text-[11px] text-slate-600 font-mono tracking-[0.15em]">GENERATOR</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-600 font-mono hidden sm:block">Powered by</span>
-            <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+            <span className="text-[10px] text-slate-700 font-mono hidden sm:block tracking-wide">POWERED BY</span>
+            <span className="font-mono text-[10px] px-2.5 py-1 rounded-md bg-[#111318] border border-[#1e2028] text-slate-500">
               {MODEL}
             </span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-5 py-10 space-y-8">
+      <main className="max-w-4xl mx-auto px-6 py-12 space-y-8">
 
         {/* ── Hero ──────────────────────────────────────────────────────────── */}
-        <div className="no-print text-center space-y-4 pt-4 pb-2">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-100">
-            Institutional-Grade Deal Memos,{' '}
+        <div className="no-print space-y-5 pt-2 pb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/20 bg-amber-500/[0.05]">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="font-mono text-[10px] tracking-[0.2em] text-amber-400/80 uppercase">M&A Intelligence</span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white leading-[1.1]">
+            Institutional-Grade<br />
+            Deal Memos,{' '}
             <span className="text-amber-400">Instantly</span>
           </h1>
-          <p className="text-slate-400 max-w-lg mx-auto text-sm leading-relaxed">
+          <p className="text-slate-500 max-w-xl text-base leading-relaxed">
             Paste a company description. Get a rigorous M&A deal memo — business model,
             TAM, risks, comps, diligence questions, and a preliminary investment verdict —
             written the way a senior banker would write it.
@@ -418,19 +414,18 @@ function App() {
 
         {/* ── Input panel ───────────────────────────────────────────────────── */}
         {!rawMemo && (
-          <div className="no-print bg-[#0d0f16] border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl shadow-black/40">
+          <div className="no-print bg-[#0c0d12] border border-[#181a23] rounded-2xl p-6 space-y-5 shadow-2xl shadow-black/60">
 
-            {/* Description textarea */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-slate-400">
-                  <span className="text-amber-400">◉</span> Company Description
+                <label className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-500 font-mono">
+                  Company Description
                 </label>
                 <button
                   onClick={handleExample}
-                  className="text-[11px] font-mono tracking-wide text-amber-500 hover:text-amber-400 border border-amber-500/25 hover:border-amber-500/50 px-3 py-1 rounded transition-all"
+                  className="text-[11px] font-mono text-amber-500/60 hover:text-amber-400 transition-colors tracking-wide"
                 >
-                  TRY AN EXAMPLE →
+                  Try an example →
                 </button>
               </div>
               <textarea
@@ -442,45 +437,40 @@ function App() {
                 }}
                 placeholder="Describe the company: what they do, their business model, target market, competitive landscape, funding history, key metrics (ARR, growth rate, headcount), and any strategic context…"
                 rows={9}
-                className="w-full bg-[#141720] border border-slate-700 rounded-lg px-4 py-3 text-slate-200 text-sm placeholder-slate-700 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/20 transition-all resize-none leading-relaxed"
+                className="w-full bg-[#09090f] border border-[#1e2028] rounded-xl px-4 py-3.5 text-slate-200 text-sm placeholder-[#2a2d3a] focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/10 transition-all resize-none leading-relaxed"
               />
               <div className="flex justify-between items-center">
                 <p className="text-[11px] text-slate-700 font-mono">
-                  {charCount.toLocaleString()} characters
+                  {charCount.toLocaleString()} chars
                   {charCount > 0 && charCount < 20 &&
-                    <span className="text-amber-700 ml-2">— add more detail for a better memo</span>
+                    <span className="text-amber-700/60 ml-2">— add more detail for a better memo</span>
                   }
                 </p>
                 {charCount > 3500 && (
-                  <p className="text-[11px] text-amber-700 font-mono">Consider trimming — 500 words is ideal</p>
+                  <p className="text-[11px] text-amber-700/60 font-mono">Consider trimming — 500 words is ideal</p>
                 )}
               </div>
             </div>
 
-            {/* Error */}
             {error && (
-              <div className="flex items-start gap-3 bg-rose-900/20 border border-rose-800/40 rounded-lg px-4 py-3">
-                <span className="text-rose-400 shrink-0 mt-0.5">⚠</span>
-                <p className="text-rose-300 text-sm">{error}</p>
+              <div className="flex items-start gap-3 bg-rose-950/30 border border-rose-900/30 rounded-xl px-4 py-3">
+                <span className="text-rose-400 shrink-0 text-sm">⚠</span>
+                <p className="text-rose-300/90 text-sm">{error}</p>
               </div>
             )}
 
-            {/* Generate button */}
             <button
               onClick={generate}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-600 text-black font-bold text-[13px] tracking-widest uppercase py-4 rounded-xl transition-all duration-150 shadow-lg shadow-amber-500/10"
+              className="w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:bg-[#111318] disabled:text-slate-600 text-black font-bold text-[13px] tracking-[0.12em] uppercase py-4 rounded-xl transition-all duration-150 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20"
             >
               {isLoading ? (
                 <>
                   <PulseDots />
-                  <span className="text-amber-900">GENERATING MEMO…</span>
+                  <span className="text-black/60">Generating Memo…</span>
                 </>
               ) : (
-                <>
-                  <span>⟶</span>
-                  <span>GENERATE DEAL MEMO</span>
-                </>
+                <span>Generate Deal Memo →</span>
               )}
             </button>
           </div>
@@ -488,13 +478,13 @@ function App() {
 
         {/* ── Streaming preview ─────────────────────────────────────────────── */}
         {isLoading && streamText && (
-          <div className="no-print bg-[#0d0f16] border border-amber-500/20 rounded-2xl overflow-hidden shadow-lg shadow-amber-500/5">
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 bg-[#0b0d13]">
+          <div className="no-print bg-[#0a0b10] border border-amber-500/10 rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#181a23] bg-[#0c0d12]">
               <PulseDots />
-              <span className="text-amber-400 font-mono text-[11px] tracking-widest">GENERATING — DO NOT CLOSE</span>
+              <span className="text-amber-400/60 font-mono text-[10px] tracking-[0.2em]">GENERATING — DO NOT CLOSE</span>
             </div>
-            <div className="p-5 max-h-72 overflow-y-auto">
-              <pre className="text-slate-500 text-xs font-mono leading-relaxed whitespace-pre-wrap cursor-blink">
+            <div className="p-5 max-h-64 overflow-y-auto">
+              <pre className="text-[#353a52] text-xs font-mono leading-relaxed whitespace-pre-wrap cursor-blink">
                 {streamText}
               </pre>
               <div ref={streamEndRef} />
@@ -502,43 +492,53 @@ function App() {
           </div>
         )}
 
+        {/* ── Loading placeholder ────────────────────────────────────────────── */}
+        {isLoading && !streamText && (
+          <div className="no-print flex flex-col items-center justify-center py-20 gap-4">
+            <PulseDots />
+            <p className="text-slate-700 font-mono text-[11px] tracking-[0.2em]">
+              CONTACTING ANTHROPIC API…
+            </p>
+          </div>
+        )}
+
         {/* ── Memo output ───────────────────────────────────────────────────── */}
         {rawMemo && sections.length > 0 && (
-          <div ref={memoTopRef} className="space-y-4">
+          <div ref={memoTopRef} className="space-y-3">
 
             {/* Memo header bar */}
-            <div className="no-print flex items-center justify-between py-3 border-b border-slate-800">
+            <div className="no-print flex items-center justify-between py-4 border-b border-[#181a23]">
               <div>
-                <h2 className="font-mono text-[11px] font-bold tracking-widest uppercase text-slate-400">
+                <h2 className="font-mono text-[11px] font-bold tracking-[0.15em] uppercase text-slate-500">
                   Investment Deal Memo
                 </h2>
-                <p className="text-[11px] text-slate-600 font-mono mt-0.5">
-                  Generated {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                <p className="text-[11px] text-slate-700 font-mono mt-0.5">
+                  {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={copyMemo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[11px] font-mono text-slate-300 hover:text-white transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
                 >
-                  {copied ? '✓ COPIED' : '⎘ COPY'}
+                  {copied ? '✓ Copied' : '⎘ Copy'}
                 </button>
                 <button
                   onClick={exportMemo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[11px] font-mono text-slate-300 hover:text-white transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
                 >
-                  ↓ EXPORT
+                  ↓ Export
                 </button>
                 <button
                   onClick={resetMemo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[11px] font-mono text-slate-400 hover:text-white transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] rounded-lg text-[11px] font-mono text-slate-600 hover:text-white transition-all"
                 >
-                  ↺ NEW
+                  ↺ New
                 </button>
               </div>
             </div>
 
-            {/* Verdict first (most prominent) */}
+            {/* Verdict first — most prominent */}
             {(() => {
               const verdictSec = sections.find(s => /VERDICT|RECOMMENDATION|PRELIMINARY/.test(s.key));
               return verdictSec ? <VerdictCard content={verdictSec.content} /> : null;
@@ -549,57 +549,45 @@ function App() {
               .filter(s => !/VERDICT|RECOMMENDATION|PRELIMINARY/.test(s.key))
               .map(s => {
                 const meta = getSectionMeta(s.key);
-                return (
-                  <SectionCard key={s.key} header={s.header} content={s.content} meta={meta} />
-                );
+                return <SectionCard key={s.key} header={s.header} content={s.content} meta={meta} />;
               })
             }
 
             {/* Bottom action bar */}
-            <div className="no-print flex flex-wrap justify-center gap-3 pt-4 pb-8">
+            <div className="no-print flex flex-wrap justify-center gap-3 pt-6 pb-10">
               <button
                 onClick={copyMemo}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm font-mono text-slate-300 hover:text-white transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] hover:border-[#272a36] rounded-xl text-sm font-mono text-slate-400 hover:text-white transition-all"
               >
-                {copied ? '✓ COPIED' : '⎘ COPY FULL MEMO'}
+                {copied ? '✓ Copied' : '⎘ Copy Full Memo'}
               </button>
               <button
                 onClick={exportMemo}
-                className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-sm font-mono text-amber-400 hover:text-amber-300 transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/[0.07] hover:bg-amber-500/[0.12] border border-amber-500/20 hover:border-amber-500/35 rounded-xl text-sm font-mono text-amber-400/70 hover:text-amber-300 transition-all"
               >
-                ↓ EXPORT AS .TXT
+                ↓ Export as .txt
               </button>
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm font-mono text-slate-400 hover:text-white transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] hover:border-[#272a36] rounded-xl text-sm font-mono text-slate-500 hover:text-white transition-all"
               >
-                ⎙ PRINT
+                ⎙ Print
               </button>
               <button
                 onClick={resetMemo}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm font-mono text-slate-400 hover:text-white transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] hover:border-[#272a36] rounded-xl text-sm font-mono text-slate-500 hover:text-white transition-all"
               >
-                ↺ GENERATE ANOTHER
+                ↺ Generate Another
               </button>
             </div>
-          </div>
-        )}
-
-        {/* If loading + no stream yet, show placeholder */}
-        {isLoading && !streamText && (
-          <div className="no-print flex flex-col items-center justify-center py-16 gap-4">
-            <PulseDots />
-            <p className="text-slate-500 font-mono text-xs tracking-widest">
-              CONTACTING ANTHROPIC API…
-            </p>
           </div>
         )}
 
       </main>
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer className="no-print border-t border-slate-800/60 mt-6 py-5">
-        <div className="max-w-4xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-slate-700">
+      <footer className="no-print border-t border-[#181a23] mt-6 py-5">
+        <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-800">
           <span>DEAL MEMO GENERATOR — POWERED BY ANTHROPIC</span>
           <span>FOR INFORMATIONAL PURPOSES ONLY — NOT INVESTMENT ADVICE</span>
         </div>
