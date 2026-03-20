@@ -7,8 +7,31 @@ const { useState, useMemo, useCallback, useRef, useEffect } = React;
 
 const MODEL = 'claude-sonnet-4-20250514';
 
-const SYSTEM_PROMPT =
-  'You are a senior investment banker at a bulge bracket firm specializing in M&A and deal origination. Given a company description, produce a concise but rigorous deal memo covering: business model, market opportunity, key risks, comparable transactions, critical diligence questions, and a preliminary recommendation (Pass / Watch / Pursue). Use precise financial language. Be direct and opinionated.';
+const buildSystemPrompt = (tone = 'banker', depth = 'standard', audience = 'ic') => {
+  let prompt = 'You are a senior investment banker at a bulge bracket firm specializing in M&A and deal origination.';
+
+  if (tone === 'aggressive') {
+    prompt += ' Be opinionated, bold, and identify the biggest value drivers and risks clearly.';
+  } else if (tone === 'conservative') {
+    prompt += ' Be rigorous, thorough, and identify potential pitfalls and due diligence gaps.';
+  }
+
+  if (depth === 'executive') {
+    prompt += ' Keep analysis concise and at 40% shorter length, focusing on highest-level drivers.';
+  } else if (depth === 'deep') {
+    prompt += ' Provide detailed analysis at 50% longer length, including nuanced competitive dynamics and scenario analysis.';
+  }
+
+  if (audience === 'presentation') {
+    prompt += ' Format for an IC presentation — emphasize storytelling and clear visual structure.';
+  } else if (audience === 'sellside') {
+    prompt += ' Format for a sell-side pitch — emphasize seller strengths and valuation precedents.';
+  }
+
+  prompt += ' Given a company description, produce a rigorous deal memo covering: business model, market opportunity, key risks, comparable transactions, critical diligence questions, and a preliminary recommendation (Pass / Watch / Pursue). Use precise financial language. Be direct.';
+
+  return prompt;
+};
 
 const EXAMPLE_DESCRIPTION = `Rippling is an enterprise HR and IT management platform that unifies payroll, benefits, device management, and app provisioning into a single system of record built on a core employee graph. Founded in 2016 by Parker Conrad (previously of Zenefits), Rippling has raised ~$1.2B across multiple rounds at a reported $13.5B valuation as of its Series F in 2023. The company targets mid-market businesses (50–2,000 employees) and operates a compound startup model where each product module — Payroll, PEO, Benefits, IT, Finance, Expenses — cross-sells off the same data layer, creating compounding lock-in and strong net dollar retention (reportedly >135% NDR). Revenue is estimated at $300–400M ARR growing 60%+ year-over-year. The business model is SaaS, priced per seat per module. Primary competitors include Workday and ADP in HCM, Gusto in SMB payroll, Okta and Jamf in IT management, and Bamboo HR in HR. The company has expanded to the UK and Australia and is exploring broader international markets. Key strategic questions center on path to profitability, competitive response from entrenched HCM incumbents, execution risk of maintaining multi-product velocity, and the timing and valuation of a potential IPO.`;
 
@@ -168,14 +191,69 @@ function FormattedContent({ text }) {
   return <div className="space-y-2.5">{nodes}</div>;
 }
 
-function SectionCard({ header, content, meta }) {
+function SectionCard({ header, content, meta, sectionKey, isEditing, onEdit, onCopy, onRegenerate }) {
+  const [editText, setEditText] = useState(content);
+
   return (
     <div className={`print-section rounded-xl overflow-hidden bg-[#0d1525] border border-[#1a2438] border-l-[3px] ${meta.leftBorder}`}>
-      <div className="px-5 py-3.5 border-b border-[#1a2438]">
+      <div className="px-5 py-3.5 border-b border-[#1a2438] flex items-center justify-between">
         <h3 className={`text-[11px] font-bold tracking-[0.15em] uppercase ${meta.accent} font-mono`}>{header}</h3>
+        <div className="no-print flex items-center gap-1.5">
+          <button
+            onClick={() => onCopy(content)}
+            className="p-1 hover:bg-[#1a2438] rounded text-slate-400 hover:text-white transition-all text-xs"
+            title="Copy section"
+          >
+            ⎘
+          </button>
+          <button
+            onClick={() => onRegenerate(sectionKey)}
+            className="p-1 hover:bg-[#1a2438] rounded text-slate-400 hover:text-white transition-all text-xs"
+            title="Regenerate section"
+          >
+            ↻
+          </button>
+          {!isEditing && (
+            <button
+              onClick={() => onEdit(sectionKey)}
+              className="p-1 hover:bg-[#1a2438] rounded text-slate-400 hover:text-white transition-all text-xs"
+              title="Edit section"
+            >
+              ✎
+            </button>
+          )}
+        </div>
       </div>
       <div className="px-5 py-4">
-        <FormattedContent text={content} />
+        {isEditing ? (
+          <div className="space-y-2">
+            <textarea
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              className="w-full bg-[#070c18] border border-[#1e2c3f] rounded-lg px-3 py-2 text-slate-300 text-sm focus:outline-none focus:border-amber-500/40 resize-none"
+              rows={8}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  onEdit(sectionKey, editText);
+                  onEdit(sectionKey); // Toggle off
+                }}
+                className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded text-emerald-400 text-xs font-mono transition-all"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => onEdit(sectionKey)}
+                className="px-3 py-1.5 bg-[#1a2438] hover:bg-[#243045] border border-[#1e2c3f] rounded text-slate-400 text-xs font-mono transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <FormattedContent text={content} />
+        )}
       </div>
     </div>
   );
@@ -217,6 +295,10 @@ function PulseDots() {
   );
 }
 
+function renderMarkdown(rawMemo) {
+  return rawMemo;
+}
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 function sanitizeText(text) {
@@ -244,6 +326,23 @@ function App() {
   const [fileError, setFileError]       = useState('');
   const [isDragging, setIsDragging]     = useState(false);
   const [fileName, setFileName]         = useState('');
+  const [previewText, setPreviewText]   = useState('');
+  const [previewFileName, setPreviewFileName] = useState('');
+
+  // New feature states
+  const [tone, setTone]                 = useState('banker');
+  const [depth, setDepth]               = useState('standard');
+  const [audience, setAudience]         = useState('ic');
+  const [editingSections, setEditingSections] = useState({});
+  const [sectionEdits, setSectionEdits] = useState({});
+  const [history, setHistory]           = useState(() => {
+    const saved = localStorage.getItem('dealMemoHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showFollowUp, setShowFollowUp] = useState(false);
+  const [followUpText, setFollowUpText] = useState('');
+  const [copiedSection, setCopiedSection] = useState(null);
+  const [regeneratingSection, setRegeneratingSection] = useState(null);
 
   const memoTopRef   = useRef(null);
   const streamEndRef = useRef(null);
@@ -255,7 +354,14 @@ function App() {
     }
   }, [streamText]);
 
-  const sections = useMemo(() => (rawMemo ? parseSections(rawMemo) : []), [rawMemo]);
+  const sections = useMemo(() => {
+    if (!rawMemo) return [];
+    const parsed = parseSections(rawMemo);
+    return parsed.map(s => ({
+      ...s,
+      content: sectionEdits[s.key] || s.content,
+    }));
+  }, [rawMemo, sectionEdits]);
 
   const handleFile = useCallback(async (file) => {
     if (!file) return;
@@ -292,8 +398,10 @@ function App() {
       }
       text = text.trim();
       if (!text) throw new Error('No readable text found in this file.');
-      setDescription(text);
-      setCharCount(text.length);
+
+      // Show preview instead of auto-filling
+      setPreviewText(text);
+      setPreviewFileName(file.name);
       setError('');
     } catch (err) {
       setFileError(err.message || 'Failed to read file.');
@@ -338,9 +446,13 @@ function App() {
     setError('');
     setRawMemo('');
     setStreamText('');
+    setShowFollowUp(false);
+    setFollowUpText('');
 
     try {
       const cleanDescription = sanitizeText(description.trim());
+      const systemPrompt = buildSystemPrompt(tone, depth, audience);
+
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -348,7 +460,7 @@ function App() {
           model: MODEL,
           max_tokens: 2500,
           stream: true,
-          system: SYSTEM_PROMPT,
+          system: systemPrompt,
           messages: [{ role: 'user', content: buildUserPrompt(cleanDescription) }],
         }),
       });
@@ -398,6 +510,22 @@ function App() {
 
       setRawMemo(full);
       setStreamText('');
+      setSectionEdits({});
+      setEditingSections({});
+
+      // Save to history
+      const historyEntry = {
+        id: Date.now(),
+        description: cleanDescription.slice(0, 100),
+        memo: full,
+        timestamp: new Date().toISOString(),
+        tone, depth, audience,
+      };
+      const newHistory = [historyEntry, ...history].slice(0, 20);
+      setHistory(newHistory);
+      localStorage.setItem('dealMemoHistory', JSON.stringify(newHistory));
+
+      setShowFollowUp(true);
       setTimeout(() => memoTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     } catch (err) {
       let msg = err.message || 'An unexpected error occurred.';
@@ -408,7 +536,51 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [description]);
+  }, [description, tone, depth, audience, history]);
+
+  const handleRegenerateSection = useCallback(async (sectionKey) => {
+    if (!rawMemo) return;
+    setRegeneratingSection(sectionKey);
+
+    try {
+      const currentSection = sections.find(s => s.key === sectionKey);
+      if (!currentSection) return;
+
+      const systemPrompt = buildSystemPrompt(tone, depth, audience);
+      const prompt = `You are a senior investment banker. Regenerate ONLY the "${currentSection.header}" section of a deal memo. Keep the same depth and style as the original memo. Respond with ONLY the section content, starting with the header "## ${currentSection.header}" and the section text, no other text.`;
+
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 1000,
+          stream: false,
+          system: systemPrompt,
+          messages: [{
+            role: 'user',
+            content: `${prompt}\n\nCompany: ${description.slice(0, 200)}...`
+          }],
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to regenerate section');
+
+      const data = await res.json();
+      const newContent = data.content[0]?.text || '';
+      const contentMatch = newContent.match(/##\s+[^\n]+\n([\s\S]*)/);
+      const extractedContent = contentMatch ? contentMatch[1].trim() : newContent;
+
+      setSectionEdits(prev => ({
+        ...prev,
+        [sectionKey]: extractedContent,
+      }));
+    } catch (err) {
+      alert('Failed to regenerate section: ' + err.message);
+    } finally {
+      setRegeneratingSection(null);
+    }
+  }, [rawMemo, sections, description, tone, depth, audience]);
 
   const copyMemo = useCallback(() => {
     if (!rawMemo) return;
@@ -418,7 +590,36 @@ function App() {
     });
   }, [rawMemo]);
 
-  const exportMemo = useCallback(() => {
+  const copySectionContent = useCallback((content) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedSection(true);
+      setTimeout(() => setCopiedSection(false), 1500);
+    });
+  }, []);
+
+  const exportPDF = useCallback(() => {
+    if (!rawMemo) return;
+    const element = memoTopRef.current;
+    if (!element) return;
+
+    // Simple approach: trigger print dialog
+    window.print();
+  }, [rawMemo]);
+
+  const exportMarkdown = useCallback(() => {
+    if (!rawMemo) return;
+    const blob = new Blob([rawMemo], { type: 'text/markdown;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `deal-memo-${new Date().toISOString().slice(0, 10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [rawMemo]);
+
+  const exportTXT = useCallback(() => {
     if (!rawMemo) return;
     const blob = new Blob([rawMemo], { type: 'text/plain;charset=utf-8' });
     const url  = URL.createObjectURL(blob);
@@ -431,14 +632,93 @@ function App() {
     URL.revokeObjectURL(url);
   }, [rawMemo]);
 
+  const handleFollowUp = useCallback(async () => {
+    if (!followUpText.trim() || !rawMemo) return;
+
+    setIsLoading(true);
+    try {
+      const systemPrompt = buildSystemPrompt(tone, depth, audience);
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 1500,
+          stream: true,
+          system: systemPrompt,
+          messages: [
+            { role: 'user', content: buildUserPrompt(sanitizeText(description.trim())) },
+            { role: 'assistant', content: rawMemo },
+            { role: 'user', content: followUpText },
+          ],
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to process follow-up');
+
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full   = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+              full += evt.delta.text;
+              setStreamText(full);
+            }
+          } catch (e) {}
+        }
+      }
+
+      setFollowUpText('');
+      // Append to rawMemo
+      setRawMemo(prev => prev + '\n\n## FOLLOW-UP ANALYSIS\n' + full);
+    } catch (err) {
+      alert('Failed: ' + err.message);
+    } finally {
+      setIsLoading(false);
+      setStreamText('');
+    }
+  }, [followUpText, rawMemo, description, tone, depth, audience]);
+
   const resetMemo = useCallback(() => {
     setRawMemo('');
     setStreamText('');
     setError('');
+    setShowFollowUp(false);
+    setFollowUpText('');
+    setSectionEdits({});
+    setEditingSections({});
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const toggleEditSection = useCallback((sectionKey, newContent = null) => {
+    setEditingSections(prev => {
+      const newState = { ...prev };
+      if (newContent !== null) {
+        setSectionEdits(prev2 => ({
+          ...prev2,
+          [sectionKey]: newContent,
+        }));
+      }
+      newState[sectionKey] = !newState[sectionKey];
+      return newState;
+    });
+  }, []);
+
   // ─── Render ───────────────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-[#0a0f1e] text-slate-100 font-sans">
 
@@ -464,7 +744,7 @@ function App() {
             </svg>
             <span className="font-mono text-[11px] font-bold text-amber-400 tracking-[0.2em]">DEAL MEMO</span>
             <span className="h-4 w-px bg-[#243045] hidden sm:block" />
-            <span className="hidden sm:block text-[11px] text-slate-600 font-mono tracking-[0.15em]">GENERATOR</span>
+            <span className="hidden sm:block text-[11px] text-slate-500 font-mono tracking-[0.15em]">GENERATOR</span>
           </div>
           <div />
         </div>
@@ -489,6 +769,40 @@ function App() {
             written the way a senior banker would write it.
           </p>
         </div>
+
+        {/* ── File preview modal ────────────────────────────────────────────── */}
+        {previewText && (
+          <div className="no-print fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+            <div className="bg-[#0d1525] border border-[#1a2438] rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+              <div className="px-6 py-4 border-b border-[#1a2438] flex items-center justify-between">
+                <h3 className="text-white font-bold">Review Extracted Text</h3>
+                <span className="text-slate-500 text-xs">{previewFileName}</span>
+              </div>
+              <div className="px-6 py-4 overflow-y-auto flex-1">
+                <p className="text-slate-300 text-sm whitespace-pre-wrap">{previewText}</p>
+              </div>
+              <div className="px-6 py-4 border-t border-[#1a2438] flex gap-3 justify-end">
+                <button
+                  onClick={() => { setPreviewText(''); setPreviewFileName(''); setFileName(''); }}
+                  className="px-4 py-2 bg-[#1a2438] hover:bg-[#243045] border border-[#1e2c3f] rounded-lg text-slate-400 text-sm font-mono transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setDescription(previewText);
+                    setCharCount(previewText.length);
+                    setPreviewText('');
+                    setPreviewFileName('');
+                  }}
+                  className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 text-sm font-mono transition-all"
+                >
+                  Use This Text
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Input panel ───────────────────────────────────────────────────── */}
         {!rawMemo && (
@@ -566,7 +880,7 @@ function App() {
                   <>
                     <span className="text-emerald-500 text-sm">✓</span>
                     <span className="text-slate-400 text-xs font-mono truncate">{fileName}</span>
-                    <span className="ml-auto text-[10px] text-slate-600 font-mono shrink-0">click to replace</span>
+                    <span className="ml-auto text-[10px] text-slate-500 font-mono shrink-0">click to replace</span>
                   </>
                 ) : (
                   <>
@@ -587,10 +901,63 @@ function App() {
               )}
             </div>
 
+            {/* ── Generation options ────────────────────────────────────────── */}
+            <div className="space-y-3 pt-3 border-t border-[#1a2438]">
+              <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
+                Analysis Settings
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 font-mono">Tone</label>
+                  <select
+                    value={tone}
+                    onChange={e => setTone(e.target.value)}
+                    className="w-full bg-[#070c18] border border-[#1e2c3f] rounded-lg px-3 py-2 text-slate-300 text-xs focus:outline-none focus:border-amber-500/40"
+                  >
+                    <option value="banker">Professional (default)</option>
+                    <option value="aggressive">Aggressive / Opinionated</option>
+                    <option value="conservative">Conservative / Cautious</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 font-mono">Depth</label>
+                  <select
+                    value={depth}
+                    onChange={e => setDepth(e.target.value)}
+                    className="w-full bg-[#070c18] border border-[#1e2c3f] rounded-lg px-3 py-2 text-slate-300 text-xs focus:outline-none focus:border-amber-500/40"
+                  >
+                    <option value="executive">Executive (brief)</option>
+                    <option value="standard">Standard (default)</option>
+                    <option value="deep">Deep Dive (detailed)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 font-mono">Audience</label>
+                  <select
+                    value={audience}
+                    onChange={e => setAudience(e.target.value)}
+                    className="w-full bg-[#070c18] border border-[#1e2c3f] rounded-lg px-3 py-2 text-slate-300 text-xs focus:outline-none focus:border-amber-500/40"
+                  >
+                    <option value="ic">IC Review (default)</option>
+                    <option value="presentation">IC Presentation</option>
+                    <option value="sellside">Sell-Side Pitch</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {error && (
               <div className="flex items-start gap-3 bg-rose-950/30 border border-rose-900/30 rounded-xl px-4 py-3">
                 <span className="text-rose-400 shrink-0 text-sm">⚠</span>
-                <p className="text-rose-300/90 text-sm">{error}</p>
+                <div className="flex-1">
+                  <p className="text-rose-300/90 text-sm">{error}</p>
+                  <button
+                    onClick={generate}
+                    className="mt-2 text-xs font-mono text-rose-400 hover:text-rose-300 underline"
+                  >
+                    Try Again →
+                  </button>
+                </div>
               </div>
             )}
 
@@ -651,22 +1018,32 @@ function App() {
                   {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 <button
                   onClick={copyMemo}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
+                  title="Copy full memo"
                 >
                   {copied ? '✓ Copied' : '⎘ Copy'}
                 </button>
                 <button
-                  onClick={exportMemo}
+                  onClick={exportMarkdown}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
+                  title="Export as Markdown"
                 >
-                  ↓ Export
+                  ⎗ MD
+                </button>
+                <button
+                  onClick={exportTXT}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
+                  title="Export as .txt"
+                >
+                  ↓ TXT
                 </button>
                 <button
                   onClick={resetMemo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-600 hover:text-white transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
+                  title="Generate new memo"
                 >
                   ↺ New
                 </button>
@@ -684,9 +1061,47 @@ function App() {
               .filter(s => !/VERDICT|RECOMMENDATION|PRELIMINARY/.test(s.key))
               .map(s => {
                 const meta = getSectionMeta(s.key);
-                return <SectionCard key={s.key} header={s.header} content={s.content} meta={meta} />;
+                return (
+                  <SectionCard
+                    key={s.key}
+                    header={s.header}
+                    content={s.content}
+                    meta={meta}
+                    sectionKey={s.key}
+                    isEditing={editingSections[s.key]}
+                    onEdit={toggleEditSection}
+                    onCopy={copySectionContent}
+                    onRegenerate={handleRegenerateSection}
+                  />
+                );
               })
             }
+
+            {/* Follow-up input */}
+            {showFollowUp && !isLoading && (
+              <div className="no-print bg-[#0d1525] border border-[#1a2438] rounded-xl p-4 space-y-3">
+                <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
+                  Ask a Follow-Up Question
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={followUpText}
+                    onChange={e => setFollowUpText(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && handleFollowUp()}
+                    placeholder="E.g., 'What's the path to profitability?' or 'Compare to Workday's valuation'"
+                    className="flex-1 bg-[#070c18] border border-[#1e2c3f] rounded-lg px-3 py-2 text-slate-300 text-sm placeholder-[#1e2d47] focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/10"
+                  />
+                  <button
+                    onClick={handleFollowUp}
+                    disabled={isLoading || !followUpText.trim()}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-[#0f1928] disabled:text-slate-600 text-black font-bold text-xs rounded-lg transition-all"
+                  >
+                    {isLoading ? '...' : 'Ask'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Bottom action bar */}
             <div className="no-print flex flex-wrap justify-center gap-3 pt-6 pb-10">
@@ -697,7 +1112,13 @@ function App() {
                 {copied ? '✓ Copied' : '⎘ Copy Full Memo'}
               </button>
               <button
-                onClick={exportMemo}
+                onClick={exportMarkdown}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] hover:border-[#28364f] rounded-xl text-sm font-mono text-slate-400 hover:text-white transition-all"
+              >
+                ⎗ Export as .md
+              </button>
+              <button
+                onClick={exportTXT}
                 className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/[0.07] hover:bg-amber-500/[0.12] border border-amber-500/20 hover:border-amber-500/35 rounded-xl text-sm font-mono text-amber-400/70 hover:text-amber-300 transition-all"
               >
                 ↓ Export as .txt
