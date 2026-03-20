@@ -170,8 +170,8 @@ function FormattedContent({ text }) {
 
 function SectionCard({ header, content, meta }) {
   return (
-    <div className={`print-section rounded-xl overflow-hidden bg-[#0c0d12] border border-[#181a23] border-l-[3px] ${meta.leftBorder}`}>
-      <div className="px-5 py-3.5 border-b border-[#181a23]">
+    <div className={`print-section rounded-xl overflow-hidden bg-[#0d1525] border border-[#1a2438] border-l-[3px] ${meta.leftBorder}`}>
+      <div className="px-5 py-3.5 border-b border-[#1a2438]">
         <h3 className={`text-[11px] font-bold tracking-[0.15em] uppercase ${meta.accent} font-mono`}>{header}</h3>
       </div>
       <div className="px-5 py-4">
@@ -196,7 +196,7 @@ function VerdictCard({ content }) {
           {style.label}
         </span>
       </div>
-      <div className="px-5 py-4 bg-[#0c0d12]">
+      <div className="px-5 py-4 bg-[#0d1525]">
         <FormattedContent text={body} />
       </div>
     </div>
@@ -440,15 +440,15 @@ function App() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#07080c] text-slate-100 font-sans">
+    <div className="min-h-screen bg-[#0a0f1e] text-slate-100 font-sans">
 
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <header className="no-print sticky top-0 z-50 border-b border-[#181a23] bg-[#07080c]/95 backdrop-blur">
+      <header className="no-print sticky top-0 z-50 border-b border-[#1a2438] bg-[#0a0f1e]/95 backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Logo mark */}
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="28" height="28" rx="6" fill="#111318" stroke="#1e2028" strokeWidth="1"/>
+              <rect width="28" height="28" rx="6" fill="#0f1928" stroke="#1e2c3f" strokeWidth="1"/>
               {/* Document base */}
               <rect x="7" y="6" width="11" height="14" rx="1.5" fill="none" stroke="#f59e0b" strokeWidth="1.2"/>
               {/* Folded corner */}
@@ -463,7 +463,7 @@ function App() {
               <rect x="19" y="15" width="2" height="6" rx="0.5" fill="#f59e0b" opacity="0.6"/>
             </svg>
             <span className="font-mono text-[11px] font-bold text-amber-400 tracking-[0.2em]">DEAL MEMO</span>
-            <span className="h-4 w-px bg-[#252830] hidden sm:block" />
+            <span className="h-4 w-px bg-[#243045] hidden sm:block" />
             <span className="hidden sm:block text-[11px] text-slate-600 font-mono tracking-[0.15em]">GENERATOR</span>
           </div>
           <div />
@@ -492,7 +492,7 @@ function App() {
 
         {/* ── Input panel ───────────────────────────────────────────────────── */}
         {!rawMemo && (
-          <div className="no-print bg-[#0c0d12] border border-[#181a23] rounded-2xl p-6 space-y-5 shadow-2xl shadow-black/60">
+          <div className="no-print bg-[#0d1525] border border-[#1a2438] rounded-2xl p-6 space-y-5 shadow-2xl shadow-black/60">
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -515,7 +515,7 @@ function App() {
                 }}
                 placeholder="Describe the company: what they do, their business model, target market, competitive landscape, funding history, key metrics (ARR, growth rate, headcount), and any strategic context…"
                 rows={9}
-                className="w-full bg-[#09090f] border border-[#1e2028] rounded-xl px-4 py-3.5 text-slate-200 text-sm placeholder-[#2a2d3a] focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/10 transition-all resize-none leading-relaxed"
+                className="w-full bg-[#070c18] border border-[#1e2c3f] rounded-xl px-4 py-3.5 text-slate-200 text-sm placeholder-[#1e2d47] focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/10 transition-all resize-none leading-relaxed"
               />
               <div className="flex justify-between items-center">
                 <p className="text-[11px] text-slate-700 font-mono">
@@ -533,9 +533,9 @@ function App() {
             {/* ── File upload ──────────────────────────────────────────────── */}
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[#181a23]" />
+                <div className="h-px flex-1 bg-[#1a2438]" />
                 <span className="text-[10px] font-mono text-slate-700 tracking-widest">OR UPLOAD A FILE</span>
-                <div className="h-px flex-1 bg-[#181a23]" />
+                <div className="h-px flex-1 bg-[#1a2438]" />
               </div>
 
               <input
@@ -554,7 +554,7 @@ function App() {
                 className={`cursor-pointer border border-dashed rounded-xl px-4 py-3.5 flex items-center gap-3 transition-all ${
                   isDragging
                     ? 'border-amber-500/40 bg-amber-500/[0.04]'
-                    : 'border-[#252830] hover:border-[#353a4a] hover:bg-[#0f1018]'
+                    : 'border-[#243045] hover:border-[#353a4a] hover:bg-[#111b2d]'
                 } ${fileLoading ? 'cursor-default' : ''}`}
               >
                 {fileLoading ? (
@@ -597,7 +597,7 @@ function App() {
             <button
               onClick={generate}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:bg-[#111318] disabled:text-slate-600 text-black font-bold text-[13px] tracking-[0.12em] uppercase py-4 rounded-xl transition-all duration-150 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20"
+              className="w-full flex items-center justify-center gap-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:bg-[#0f1928] disabled:text-slate-600 text-black font-bold text-[13px] tracking-[0.12em] uppercase py-4 rounded-xl transition-all duration-150 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20"
             >
               {isLoading ? (
                 <>
@@ -613,13 +613,13 @@ function App() {
 
         {/* ── Streaming preview ─────────────────────────────────────────────── */}
         {isLoading && streamText && (
-          <div className="no-print bg-[#0a0b10] border border-amber-500/10 rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#181a23] bg-[#0c0d12]">
+          <div className="no-print bg-[#090e1b] border border-amber-500/10 rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-[#1a2438] bg-[#0d1525]">
               <PulseDots />
               <span className="text-amber-400/60 font-mono text-[10px] tracking-[0.2em]">GENERATING — DO NOT CLOSE</span>
             </div>
             <div className="p-5 max-h-64 overflow-y-auto">
-              <pre className="text-[#353a52] text-xs font-mono leading-relaxed whitespace-pre-wrap cursor-blink">
+              <pre className="text-[#2d3d5a] text-xs font-mono leading-relaxed whitespace-pre-wrap cursor-blink">
                 {streamText}
               </pre>
               <div ref={streamEndRef} />
@@ -642,7 +642,7 @@ function App() {
           <div ref={memoTopRef} className="space-y-3">
 
             {/* Memo header bar */}
-            <div className="no-print flex items-center justify-between py-4 border-b border-[#181a23]">
+            <div className="no-print flex items-center justify-between py-4 border-b border-[#1a2438]">
               <div>
                 <h2 className="font-mono text-[11px] font-bold tracking-[0.15em] uppercase text-slate-500">
                   Investment Deal Memo
@@ -654,19 +654,19 @@ function App() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={copyMemo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
                 >
                   {copied ? '✓ Copied' : '⎘ Copy'}
                 </button>
                 <button
                   onClick={exportMemo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-500 hover:text-white transition-all"
                 >
                   ↓ Export
                 </button>
                 <button
                   onClick={resetMemo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] rounded-lg text-[11px] font-mono text-slate-600 hover:text-white transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] rounded-lg text-[11px] font-mono text-slate-600 hover:text-white transition-all"
                 >
                   ↺ New
                 </button>
@@ -692,7 +692,7 @@ function App() {
             <div className="no-print flex flex-wrap justify-center gap-3 pt-6 pb-10">
               <button
                 onClick={copyMemo}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] hover:border-[#272a36] rounded-xl text-sm font-mono text-slate-400 hover:text-white transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] hover:border-[#28364f] rounded-xl text-sm font-mono text-slate-400 hover:text-white transition-all"
               >
                 {copied ? '✓ Copied' : '⎘ Copy Full Memo'}
               </button>
@@ -704,13 +704,13 @@ function App() {
               </button>
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] hover:border-[#272a36] rounded-xl text-sm font-mono text-slate-500 hover:text-white transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] hover:border-[#28364f] rounded-xl text-sm font-mono text-slate-500 hover:text-white transition-all"
               >
                 ⎙ Print
               </button>
               <button
                 onClick={resetMemo}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#111318] hover:bg-[#181a23] border border-[#1e2028] hover:border-[#272a36] rounded-xl text-sm font-mono text-slate-500 hover:text-white transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#0f1928] hover:bg-[#1a2438] border border-[#1e2c3f] hover:border-[#28364f] rounded-xl text-sm font-mono text-slate-500 hover:text-white transition-all"
               >
                 ↺ Generate Another
               </button>
@@ -721,7 +721,7 @@ function App() {
       </main>
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer className="no-print border-t border-[#181a23] mt-6 py-5">
+      <footer className="no-print border-t border-[#1a2438] mt-6 py-5">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-800">
           <span>CREATED BY CHARLES ERICKSON</span>
           <span>FOR INFORMATIONAL PURPOSES ONLY — NOT INVESTMENT ADVICE</span>
