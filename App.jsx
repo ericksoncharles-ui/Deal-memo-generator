@@ -295,8 +295,7 @@ function App() {
           const data = await res.json();
           msg = data.error?.message || msg;
         } catch {}
-        if (res.status === 401 || res.status === 500) msg = 'Configuration error — please contact support.';
-        else if (res.status === 429) msg = 'Rate limit reached. Wait a moment then try again.';
+        if (res.status === 429) msg = 'Rate limit reached. Wait a moment then try again.';
         throw new Error(msg);
       }
 

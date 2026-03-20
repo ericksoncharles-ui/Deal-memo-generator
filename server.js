@@ -18,6 +18,10 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, hasKey: !!process.env.ANTHROPIC_API_KEY });
+});
+
 app.post('/api/messages', (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
