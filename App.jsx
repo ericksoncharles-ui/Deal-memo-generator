@@ -764,10 +764,10 @@ function App() {
 
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <header className="no-print sticky top-0 z-50 border-b border-[#1a2438] bg-[#0a0f1e]/95 backdrop-blur">
-        <div className="max-w-4xl mx-auto px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
             {/* Logo mark */}
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="36" height="36" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect width="28" height="28" rx="6" fill="#0f1928" stroke="#1e2c3f" strokeWidth="1"/>
               {/* Document base */}
               <rect x="7" y="6" width="11" height="14" rx="1.5" fill="none" stroke="#f59e0b" strokeWidth="1.2"/>
@@ -782,9 +782,11 @@ function App() {
               <rect x="16" y="17" width="2" height="4" rx="0.5" fill="#f59e0b" opacity="0.9"/>
               <rect x="19" y="15" width="2" height="6" rx="0.5" fill="#f59e0b" opacity="0.6"/>
             </svg>
-            <span className="font-mono text-[11px] font-bold text-amber-400 tracking-[0.2em]">DEAL MEMO</span>
-            <span className="h-4 w-px bg-[#243045] hidden sm:block" />
-            <span className="hidden sm:block text-[11px] text-slate-500 font-mono tracking-[0.15em]">GENERATOR</span>
+            <div className="flex items-baseline gap-2">
+              <span className="font-mono text-sm font-bold text-amber-400 tracking-[0.18em]">DEAL MEMO</span>
+              <span className="h-3.5 w-px bg-[#2a3a54] hidden sm:block self-center" />
+              <span className="hidden sm:block text-sm font-bold text-slate-300 font-mono tracking-[0.18em]">GENERATOR</span>
+            </div>
           </div>
           <div />
         </div>
