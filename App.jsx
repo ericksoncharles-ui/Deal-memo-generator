@@ -191,7 +191,7 @@ function FormattedContent({ text }) {
   return <div className="space-y-2.5">{nodes}</div>;
 }
 
-function SectionCard({ header, content, meta, sectionKey, isEditing, onEdit, onCopy, onRegenerate }) {
+function SectionCard({ header, content, meta, sectionKey, isEditing, isCopied, isRegenerating, onEdit, onCopy, onRegenerate }) {
   const [editText, setEditText] = useState(content);
 
   return (
@@ -200,16 +200,17 @@ function SectionCard({ header, content, meta, sectionKey, isEditing, onEdit, onC
         <h3 className={`text-[11px] font-bold tracking-[0.15em] uppercase ${meta.accent} font-mono`}>{header}</h3>
         <div className="no-print flex items-center gap-1.5">
           <button
-            onClick={() => onCopy(content)}
-            className="p-1 hover:bg-[#1a2438] rounded text-slate-400 hover:text-white transition-all text-xs"
+            onClick={() => onCopy(content, sectionKey)}
+            className={`p-1 hover:bg-[#1a2438] rounded transition-all text-xs ${isCopied ? 'text-emerald-400' : 'text-slate-400 hover:text-white'}`}
             title="Copy section"
           >
-            ⎘
+            {isCopied ? '✓' : '⎘'}
           </button>
           <button
-            onClick={() => onRegenerate(sectionKey)}
-            className="p-1 hover:bg-[#1a2438] rounded text-slate-400 hover:text-white transition-all text-xs"
+            onClick={() => !isRegenerating && onRegenerate(sectionKey)}
+            className={`p-1 hover:bg-[#1a2438] rounded transition-all text-xs ${isRegenerating ? 'text-amber-400 animate-spin' : 'text-slate-400 hover:text-white'}`}
             title="Regenerate section"
+            disabled={isRegenerating}
           >
             ↻
           </button>
@@ -235,10 +236,7 @@ function SectionCard({ header, content, meta, sectionKey, isEditing, onEdit, onC
             />
             <div className="flex gap-2">
               <button
-                onClick={() => {
-                  onEdit(sectionKey, editText);
-                  onEdit(sectionKey); // Toggle off
-                }}
+                onClick={() => onEdit(sectionKey, editText)}
                 className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded text-emerald-400 text-xs font-mono transition-all"
               >
                 Save
@@ -259,7 +257,7 @@ function SectionCard({ header, content, meta, sectionKey, isEditing, onEdit, onC
   );
 }
 
-function VerdictCard({ content }) {
+function VerdictCard({ content, onCopy, onRegenerate, isCopied, isRegenerating }) {
   const type = getVerdictType(content);
   const style = VERDICT_STYLES[type];
   const body = content.replace(/^RECOMMENDATION:\s*(PASS|WATCH|PURSUE)\s*\n?/i, '').trim();
@@ -270,9 +268,28 @@ function VerdictCard({ content }) {
         <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
           Preliminary Verdict
         </h3>
-        <span className={`px-4 py-1 rounded text-[11px] font-bold tracking-[0.12em] border ${style.badge}`}>
-          {style.label}
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="no-print flex items-center gap-1">
+            <button
+              onClick={() => onCopy && onCopy(content, 'VERDICT')}
+              className={`p-1 hover:bg-white/5 rounded transition-all text-xs ${isCopied ? 'text-emerald-400' : 'text-slate-500 hover:text-white'}`}
+              title="Copy verdict"
+            >
+              {isCopied ? '✓' : '⎘'}
+            </button>
+            <button
+              onClick={() => !isRegenerating && onRegenerate && onRegenerate('PRELIMINARY VERDICT')}
+              className={`p-1 hover:bg-white/5 rounded transition-all text-xs ${isRegenerating ? 'text-amber-400 animate-spin' : 'text-slate-500 hover:text-white'}`}
+              title="Regenerate verdict"
+              disabled={isRegenerating}
+            >
+              ↻
+            </button>
+          </div>
+          <span className={`px-4 py-1 rounded text-[11px] font-bold tracking-[0.12em] border ${style.badge}`}>
+            {style.label}
+          </span>
+        </div>
       </div>
       <div className="px-5 py-4 bg-[#0d1525]">
         <FormattedContent text={body} />
@@ -343,6 +360,7 @@ function App() {
   const [followUpText, setFollowUpText] = useState('');
   const [copiedSection, setCopiedSection] = useState(null);
   const [regeneratingSection, setRegeneratingSection] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const memoTopRef   = useRef(null);
   const streamEndRef = useRef(null);
@@ -590,10 +608,10 @@ function App() {
     });
   }, [rawMemo]);
 
-  const copySectionContent = useCallback((content) => {
+  const copySectionContent = useCallback((content, key) => {
     navigator.clipboard.writeText(content).then(() => {
-      setCopiedSection(true);
-      setTimeout(() => setCopiedSection(false), 1500);
+      setCopiedSection(key);
+      setTimeout(() => setCopiedSection(null), 1500);
     });
   }, []);
 
@@ -703,6 +721,28 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const loadFromHistory = useCallback((entry) => {
+    setDescription(entry.description);
+    setCharCount(entry.description.length);
+    setRawMemo(entry.memo);
+    setTone(entry.tone || 'banker');
+    setDepth(entry.depth || 'standard');
+    setAudience(entry.audience || 'ic');
+    setSectionEdits({});
+    setEditingSections({});
+    setShowFollowUp(true);
+    setShowHistory(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const deleteHistoryEntry = useCallback((id) => {
+    setHistory(prev => {
+      const next = prev.filter(e => e.id !== id);
+      localStorage.setItem('dealMemoHistory', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const toggleEditSection = useCallback((sectionKey, newContent = null) => {
     setEditingSections(prev => {
       const newState = { ...prev };
@@ -801,6 +841,49 @@ function App() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── History panel ─────────────────────────────────────────────────── */}
+        {!rawMemo && history.length > 0 && (
+          <div className="no-print bg-[#0d1525] border border-[#1a2438] rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setShowHistory(h => !h)}
+              className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-[#111b2d] transition-colors"
+            >
+              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
+                Recent Memos <span className="text-slate-600 ml-1.5">({history.length})</span>
+              </span>
+              <span className={`text-slate-500 text-xs transition-transform duration-200 ${showHistory ? 'rotate-180' : ''}`}>▾</span>
+            </button>
+            {showHistory && (
+              <div className="border-t border-[#1a2438] divide-y divide-[#1a2438]">
+                {history.map(entry => (
+                  <div key={entry.id} className="flex items-center gap-3 px-5 py-3 hover:bg-[#111b2d] group transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-300 text-xs truncate">{entry.description}</p>
+                      <p className="text-slate-600 text-[10px] font-mono mt-0.5">
+                        {new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {entry.tone && entry.tone !== 'banker' && <span className="ml-2 text-amber-700/60">{entry.tone}</span>}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => loadFromHistory(entry)}
+                      className="shrink-0 px-3 py-1 bg-[#1a2438] hover:bg-[#243045] border border-[#1e2c3f] rounded text-[10px] font-mono text-slate-400 hover:text-white transition-all"
+                    >
+                      Load
+                    </button>
+                    <button
+                      onClick={() => deleteHistoryEntry(entry.id)}
+                      className="shrink-0 p-1 text-slate-700 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1053,7 +1136,15 @@ function App() {
             {/* Verdict first — most prominent */}
             {(() => {
               const verdictSec = sections.find(s => /VERDICT|RECOMMENDATION|PRELIMINARY/.test(s.key));
-              return verdictSec ? <VerdictCard content={verdictSec.content} /> : null;
+              return verdictSec ? (
+                <VerdictCard
+                  content={verdictSec.content}
+                  onCopy={copySectionContent}
+                  onRegenerate={handleRegenerateSection}
+                  isCopied={copiedSection === 'VERDICT'}
+                  isRegenerating={regeneratingSection === verdictSec.key}
+                />
+              ) : null;
             })()}
 
             {/* All other sections */}
@@ -1069,6 +1160,8 @@ function App() {
                     meta={meta}
                     sectionKey={s.key}
                     isEditing={editingSections[s.key]}
+                    isCopied={copiedSection === s.key}
+                    isRegenerating={regeneratingSection === s.key}
                     onEdit={toggleEditSection}
                     onCopy={copySectionContent}
                     onRegenerate={handleRegenerateSection}
