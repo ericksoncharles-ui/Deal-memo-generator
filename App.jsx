@@ -45,6 +45,7 @@ Use EXACTLY these section headers, each preceded by "##" on its own line:
 ## COMPARABLE COMPANIES / COMPS
 ## CRITICAL DILIGENCE QUESTIONS
 ## PRELIMINARY VERDICT
+## SOURCES & ASSUMPTIONS
 
 Guidelines per section:
 - COMPANY OVERVIEW & BUSINESS MODEL: 2–3 paragraphs. Core business, revenue model, key products, competitive moat, unit economics where known.
@@ -53,6 +54,7 @@ Guidelines per section:
 - COMPARABLE COMPANIES / COMPS: Bulleted list of 5–7 public or private comps with relevant trading/transaction multiples (EV/Revenue, EV/EBITDA, growth rates) and a one-line rationale.
 - CRITICAL DILIGENCE QUESTIONS: Numbered list of exactly 10 sharp, specific questions a lead banker would ask in first-round diligence.
 - PRELIMINARY VERDICT: Start the section body with "RECOMMENDATION: [PASS / WATCH / PURSUE]" on its own line, then 3–4 sentences of direct, opinionated reasoning identifying the key value driver or primary dealbreaker.
+- SOURCES & ASSUMPTIONS: A methodology transparency section. Use short labeled bullets, each starting with a category label in the format "Category:" followed by a brief note on sourcing or assumption basis. Cover: TAM methodology (how the market size was derived), Comps basis (what data source or proxy was used for multiples), Revenue/metrics (whether figures are disclosed, estimated, or extrapolated), and any material assumptions made in the analysis. Be honest about uncertainty. Do not fabricate specific URLs or report names. End with a bullet: "Data vintage: analysis reflects publicly available information through [state your training data cutoff period]."
 
 Company Description:
 ${description}`;
@@ -86,6 +88,8 @@ function getSectionMeta(key) {
     return { accent: 'text-teal-400', leftBorder: 'border-l-teal-500' };
   if (/VERDICT|RECOMMENDATION|PRELIMINARY/.test(key))
     return { accent: 'text-slate-300', leftBorder: 'border-l-slate-400', isVerdict: true };
+  if (/SOURCE|ASSUMPTION/.test(key))
+    return { accent: 'text-slate-500', leftBorder: 'border-l-slate-700', isSources: true };
   return { accent: 'text-slate-400', leftBorder: 'border-l-slate-600' };
 }
 
@@ -1195,6 +1199,14 @@ function App() {
                 </div>
               </div>
             )}
+
+            {/* Data vintage disclaimer */}
+            <div className="no-print flex items-start gap-2.5 px-4 py-3 bg-[#080d1a] border border-[#141e30] rounded-xl">
+              <span className="text-slate-700 text-[10px] mt-0.5 shrink-0">ⓘ</span>
+              <p className="text-[11px] text-slate-600 font-mono leading-relaxed">
+                This memo is AI-generated for analytical drafting purposes only. Market data, comparable multiples, and financial estimates reflect publicly available information through the model's training cutoff and have not been independently verified. Do not present to clients or use in IC materials without validating figures against live data sources (Bloomberg, PitchBook, public filings).
+              </p>
+            </div>
 
             {/* Bottom action bar */}
             <div className="no-print flex flex-wrap justify-center gap-3 pt-6 pb-10">
