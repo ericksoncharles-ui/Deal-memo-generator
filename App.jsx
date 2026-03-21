@@ -359,7 +359,6 @@ function App() {
   const [rawMemo, setRawMemo]           = useState('');
   const [error, setError]               = useState('');
   const [copied, setCopied]             = useState(false);
-  const [charCount, setCharCount]       = useState(0);
   const [fileLoading, setFileLoading]   = useState(false);
   const [fileError, setFileError]       = useState('');
   const [isDragging, setIsDragging]     = useState(false);
@@ -407,6 +406,8 @@ function App() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [generate, rawMemo, isLoading]);
+
+  const charCount = description.length;
 
   const sections = useMemo(() => {
     if (!rawMemo) return [];
@@ -484,7 +485,6 @@ function App() {
 
   const handleExample = useCallback(() => {
     setDescription(EXAMPLE_DESCRIPTION);
-    setCharCount(EXAMPLE_DESCRIPTION.length);
     setError('');
     setRawMemo('');
     setStreamText('');
@@ -638,11 +638,12 @@ function App() {
 
   const copyMemo = useCallback(() => {
     if (!rawMemo) return;
-    navigator.clipboard.writeText(rawMemo).then(() => {
+    navigator.clipboard.writeText(getExportContent()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
+      showToast('Memo copied to clipboard!', 'success');
     });
-  }, [rawMemo]);
+  }, [rawMemo, getExportContent, showToast]);
 
   const copySectionContent = useCallback((content, key) => {
     navigator.clipboard.writeText(content).then(() => {
@@ -656,6 +657,11 @@ function App() {
     return (slug || 'deal-memo') + '-' + new Date().toISOString().slice(0, 10);
   }, [description]);
 
+  const getExportContent = useCallback(() => {
+    if (sections.length === 0) return rawMemo;
+    return sections.map(s => `## ${s.header}\n${s.content}`).join('\n\n');
+  }, [sections, rawMemo]);
+
   const exportPDF = useCallback(() => {
     if (!rawMemo) return;
     const element = memoTopRef.current;
@@ -667,7 +673,7 @@ function App() {
 
   const exportMarkdown = useCallback(() => {
     if (!rawMemo) return;
-    const blob = new Blob([rawMemo], { type: 'text/markdown;charset=utf-8' });
+    const blob = new Blob([getExportContent()], { type: 'text/markdown;charset=utf-8' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
@@ -680,7 +686,7 @@ function App() {
 
   const exportTXT = useCallback(() => {
     if (!rawMemo) return;
-    const blob = new Blob([rawMemo], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([getExportContent()], { type: 'text/plain;charset=utf-8' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
@@ -764,7 +770,6 @@ function App() {
 
   const loadFromHistory = useCallback((entry) => {
     setDescription(entry.description);
-    setCharCount(entry.description.length);
     setRawMemo(entry.memo);
     setTone(entry.tone || 'banker');
     setDepth(entry.depth || 'standard');
@@ -877,7 +882,6 @@ function App() {
                 <button
                   onClick={() => {
                     setDescription(previewText);
-                    setCharCount(previewText.length);
                     setPreviewText('');
                     setPreviewFileName('');
                   }}
@@ -962,7 +966,6 @@ function App() {
                 value={description}
                 onChange={e => {
                   setDescription(e.target.value);
-                  setCharCount(e.target.value.length);
                   setError('');
                 }}
                 placeholder="Describe the company: what they do, their business model, target market, competitive landscape, funding history, key metrics (ARR, growth rate, headcount), and any strategic context…"
@@ -1245,7 +1248,7 @@ function App() {
                     type="text"
                     value={followUpText}
                     onChange={e => setFollowUpText(e.target.value)}
-                    onKeyPress={e => e.key === 'Enter' && handleFollowUp()}
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleFollowUp()}
                     placeholder="E.g., 'What's the path to profitability?' or 'Compare to Workday's valuation'"
                     className="flex-1 bg-[#070c18] border border-[#1e2c3f] rounded-lg px-3 py-2 text-slate-300 text-sm placeholder-[#1e2d47] focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/10"
                   />
