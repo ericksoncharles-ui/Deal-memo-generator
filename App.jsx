@@ -302,6 +302,23 @@ function VerdictCard({ content, onCopy, onRegenerate, isCopied, isRegenerating }
   );
 }
 
+function Toast({ message, type, onDismiss }) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 3500);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+  const colors = type === 'success'
+    ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300'
+    : 'bg-rose-950/90 border-rose-500/30 text-rose-300';
+  return (
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl font-mono text-xs backdrop-blur ${colors}`}>
+      <span>{type === 'success' ? '✓' : '⚠'}</span>
+      <span>{message}</span>
+      <button onClick={onDismiss} className="ml-2 opacity-50 hover:opacity-100 transition-opacity">✕</button>
+    </div>
+  );
+}
+
 function PulseDots() {
   return (
     <span className="inline-flex items-center gap-1">
@@ -365,6 +382,11 @@ function App() {
   const [copiedSection, setCopiedSection] = useState(null);
   const [regeneratingSection, setRegeneratingSection] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((message, type = 'error') => {
+    setToast({ message, type });
+  }, []);
 
   const memoTopRef   = useRef(null);
   const streamEndRef = useRef(null);
@@ -375,6 +397,16 @@ function App() {
       streamEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [streamText]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !rawMemo && !isLoading) {
+        generate();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [generate, rawMemo, isLoading]);
 
   const sections = useMemo(() => {
     if (!rawMemo) return [];
@@ -598,7 +630,7 @@ function App() {
         [sectionKey]: extractedContent,
       }));
     } catch (err) {
-      alert('Failed to regenerate section: ' + err.message);
+      showToast('Failed to regenerate section: ' + err.message);
     } finally {
       setRegeneratingSection(null);
     }
@@ -619,6 +651,11 @@ function App() {
     });
   }, []);
 
+  const getExportSlug = useCallback(() => {
+    const slug = description.trim().split(/\s+/).slice(0, 3).join('-').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    return (slug || 'deal-memo') + '-' + new Date().toISOString().slice(0, 10);
+  }, [description]);
+
   const exportPDF = useCallback(() => {
     if (!rawMemo) return;
     const element = memoTopRef.current;
@@ -634,7 +671,7 @@ function App() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `deal-memo-${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = `${getExportSlug()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -647,7 +684,7 @@ function App() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `deal-memo-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = `${getExportSlug()}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -707,7 +744,7 @@ function App() {
       // Append to rawMemo
       setRawMemo(prev => prev + '\n\n## FOLLOW-UP ANALYSIS\n' + full);
     } catch (err) {
-      alert('Failed: ' + err.message);
+      showToast('Failed: ' + err.message);
     } finally {
       setIsLoading(false);
       setStreamText('');
@@ -737,6 +774,11 @@ function App() {
     setShowFollowUp(true);
     setShowHistory(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+    localStorage.removeItem('dealMemoHistory');
   }, []);
 
   const deleteHistoryEntry = useCallback((id) => {
@@ -851,15 +893,24 @@ function App() {
         {/* ── History panel ─────────────────────────────────────────────────── */}
         {!rawMemo && history.length > 0 && (
           <div className="no-print bg-[#0d1525] border border-[#1a2438] rounded-2xl overflow-hidden">
-            <button
-              onClick={() => setShowHistory(h => !h)}
-              className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-[#111b2d] transition-colors"
-            >
-              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
-                Recent Memos <span className="text-slate-600 ml-1.5">({history.length})</span>
-              </span>
-              <span className={`text-slate-500 text-xs transition-transform duration-200 ${showHistory ? 'rotate-180' : ''}`}>▾</span>
-            </button>
+            <div className="px-5 py-3.5 flex items-center justify-between hover:bg-[#111b2d] transition-colors">
+              <button
+                onClick={() => setShowHistory(h => !h)}
+                className="flex-1 flex items-center justify-between text-left"
+              >
+                <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-slate-400 font-mono">
+                  Recent Memos <span className="text-slate-600 ml-1.5">({history.length})</span>
+                </span>
+                <span className={`text-slate-500 text-xs transition-transform duration-200 ${showHistory ? 'rotate-180' : ''}`}>▾</span>
+              </button>
+              <button
+                onClick={clearHistory}
+                className="ml-4 text-[10px] font-mono text-slate-600 hover:text-rose-400 transition-colors"
+                title="Clear all history"
+              >
+                Clear All
+              </button>
+            </div>
             {showHistory && (
               <div className="border-t border-[#1a2438] divide-y divide-[#1a2438]">
                 {history.map(entry => (
@@ -918,17 +969,23 @@ function App() {
                 rows={9}
                 className="w-full bg-[#070c18] border border-[#1e2c3f] rounded-xl px-4 py-3.5 text-slate-200 text-sm placeholder-[#1e2d47] focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/10 transition-all resize-none leading-relaxed"
               />
-              <div className="flex justify-between items-center">
-                <p className="text-[11px] text-slate-500 font-mono">
-                  {charCount.toLocaleString()} chars
-                  {charCount > 0 && charCount < 20 &&
-                    <span className="text-amber-700/60 ml-2">— add more detail for a better memo</span>
-                  }
-                </p>
-                {charCount > 3500 && (
-                  <p className="text-[11px] text-amber-700/60 font-mono">Consider trimming — 500 words is ideal</p>
-                )}
-              </div>
+              {(() => {
+                const wordCount = description.trim() ? description.trim().split(/\s+/).length : 0;
+                return (
+                  <div className="flex justify-between items-center">
+                    <p className="text-[11px] text-slate-500 font-mono">
+                      {charCount.toLocaleString()} chars
+                      {wordCount > 0 && <span className="text-slate-600 ml-2">· {wordCount} words</span>}
+                      {charCount > 0 && charCount < 20 &&
+                        <span className="text-amber-700/60 ml-2">— add more detail for a better memo</span>
+                      }
+                    </p>
+                    {charCount > 3500 && (
+                      <p className="text-[11px] text-amber-700/60 font-mono">Consider trimming — 500 words is ideal</p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* ── File upload ──────────────────────────────────────────────── */}
@@ -1059,7 +1116,10 @@ function App() {
                   <span className="text-black/60">Generating Memo…</span>
                 </>
               ) : (
-                <span>Generate Deal Memo →</span>
+                <>
+                  <span>Generate Deal Memo →</span>
+                  <span className="text-black/40 text-[10px] font-normal tracking-normal hidden sm:inline">⌘↵</span>
+                </>
               )}
             </button>
           </div>
@@ -1245,6 +1305,11 @@ function App() {
         )}
 
       </main>
+
+      {/* ── Toast ─────────────────────────────────────────────────────────────── */}
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+      )}
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       <footer className="no-print border-t border-[#1a2438] mt-6 py-5">
