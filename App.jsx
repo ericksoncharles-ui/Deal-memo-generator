@@ -1249,8 +1249,8 @@ function App() {
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
       <footer className="no-print border-t border-[#1a2438] mt-6 py-5">
         <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-600">
-          <span>DEVELOPED BY SOUNDMIND AI · POWERED BY ANTHROPIC</span>
-          <span>FOR INFORMATIONAL PURPOSES ONLY — NOT INVESTMENT ADVICE</span>
+          <span>© 2026 Developed by SoundMind AI | Powered by Anthropic</span>
+          <span>For informational purposes only</span>
         </div>
       </footer>
 
