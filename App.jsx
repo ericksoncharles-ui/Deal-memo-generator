@@ -491,8 +491,8 @@ function App() {
   }, []);
 
   const generate = useCallback(async () => {
-    if (description.trim().length < 20) {
-      setError('Please provide a brief company description (at least 20 characters).');
+    if (description.trim().length < 8) {
+      setError('Please provide a brief company description (at least 8 characters).');
       return;
     }
 
@@ -976,7 +976,7 @@ function App() {
                     <p className="text-[11px] text-slate-500 font-mono">
                       {charCount.toLocaleString()} chars
                       {wordCount > 0 && <span className="text-slate-600 ml-2">· {wordCount} words</span>}
-                      {charCount > 0 && charCount < 20 &&
+                      {charCount > 0 && charCount < 8 &&
                         <span className="text-amber-700/60 ml-2">— add more detail for a better memo</span>
                       }
                     </p>
