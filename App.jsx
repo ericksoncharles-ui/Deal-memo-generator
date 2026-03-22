@@ -1315,10 +1315,15 @@ function App() {
       )}
 
       {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer className="no-print border-t border-[#1a2438] mt-6 py-5">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-600">
-          <span>© 2026 Developed by SoundMind AI | Powered by Anthropic</span>
-          <span>For informational purposes only</span>
+      <footer className="no-print border-t border-[#1a2438] mt-6 py-6">
+        <div className="max-w-4xl mx-auto px-6 space-y-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] font-mono text-slate-600">
+            <span>© 2026 Developed by SoundMind AI | Powered by Anthropic</span>
+            <span>For informational purposes only</span>
+          </div>
+          <p className="text-[10px] text-slate-700 leading-relaxed">
+            <span className="text-slate-500 font-semibold">Data Privacy:</span> This tool does not collect, store, or retain any information you enter. Deal memos are generated in real time using Anthropic's API and are not saved on our servers. As the API provider, Anthropic may temporarily process your inputs in accordance with its API Privacy Policy. Your data is never used to train AI models. For sensitive transactions, avoid entering confidential client names or material non-public information.
+          </p>
         </div>
       </footer>
 
